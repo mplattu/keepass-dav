@@ -1,0 +1,82 @@
+#!/bin/bash
+
+ZENITY_TITLE="KeePass"
+
+function delete_if_exists {
+	FILE_TO_DELETE=$1
+
+	if [ -f "$FILE_TO_DELETE" ]; then 
+		rm "$FILE_TO_DELETE"
+	fi
+}
+
+function create_curl_secret {
+	touch "$KEEPASS_PATH/curl_secret"
+	chmod 600 "$KEEPASS_PATH/curl_secret"
+	echo -n "machine $KEEPASS_SERVER login $USER password " >$KEEPASS_PATH/curl_secret
+	zenity --password --text="Enter your password to $KEEPASS_SERVER" --title="$ZENITY_TITLE" >>$KEEPASS_PATH/curl_secret
+}
+
+function cleanup {
+	delete_if_exists "$KEEPASS_PATH/curl_secret" 
+}
+
+function error_message {
+	MESSAGE=$1
+	zenity --error --text="$MESSAGE" --title="$ZENITY_TITLE"
+}
+
+function info_message {
+	MESSAGE=$1
+	zenity --info --text="$MESSAGE" --title="$ZENITY_TITLE"
+}
+
+if [ -f /etc/keepass-dav ]; then
+	source /etc/keepass-dav
+fi
+
+if [ -f $HOME/.config/keepass-dav/keepass-dav ]; then
+	source $HOME/.config/keepass-dav/keepass-dav
+fi
+
+if [ ! -d "$KEEPASS_PATH" ]; then
+	echo "Creating $KEEPASS_PATH"
+	mkdir -p "$KEEPASS_PATH"
+fi
+
+# Create authentication file
+delete_if_exists "$KEEPASS_PATH/curl_secret"
+create_curl_secret
+
+if [ -f "$KEEPASS_PATH/$KEEPASS_FILE" ]; then
+	delete_if_exists "$KEEPASS_PATH/$KEEPASS_FILE.prev"
+	mv "$KEEPASS_PATH/$KEEPASS_FILE" "$KEEPASS_PATH/$KEEPASS_FILE.prev"
+fi
+
+# Retrieve password database file from the server
+CURL_OUTPUT=`curl -o "$KEEPASS_PATH/$KEEPASS_FILE" --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL" -sw '%{http_code}'`
+
+if [ "$CURL_OUTPUT" != "200" ]; then
+	error_message "Could not get password file from $KEEPASS_SERVER: $CURL_OUTPUT"
+	cleanup
+	exit 1
+fi
+
+# Rename old file in the server
+curl -X DELETE --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL.retrieved"
+curl -X MOVE --netrc-file "$KEEPASS_PATH/curl_secret" --header "Destination:$KEEPASS_URL.retrieved" "$KEEPASS_URL"
+
+keepassx "$KEEPASS_PATH/$KEEPASS_FILE"
+
+# Send password database file
+CURL_OUTPUT=`curl --netrc-file "$KEEPASS_PATH/curl_secret" -T "$KEEPASS_PATH/$KEEPASS_FILE" "$KEEPASS_URL" -sw '%{http_code}'`
+
+if [ "$CURL_OUTPUT" != "204" ] && [ "$CURL_OUTPUT" != "201" ]; then
+	error_message "Could not upload password file to $KEEPASS_SERVER: $CURL_OUTPUT"
+	cleanup
+	exit 1
+fi
+
+cleanup
+info_message "Password file was uploaded successfully to $KEEPASS_SERVER. All is good!"
+

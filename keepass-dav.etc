@@ -1,0 +1,14 @@
+# KeePass-DAV global settings
+
+# Path to KeePass-DAV files
+KEEPASS_PATH=/home/$USER/.config/keepass-dav
+
+# Name of the KeePass database
+KEEPASS_FILE=keepass.kdbx
+
+# DAV URL to KEEPASS file (example: path to an OwnCloud server)
+KEEPASS_URL="https://yourserver.yourdomain/owncloud/remote.php/dav/files/$USER/keepass/$KEEPASS_FILE"
+
+# Server name
+KEEPASS_SERVER="yourserver.yourdomain"
+
