@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=1.0.0
+VERSION=1.0.1
 
 if [ -d deb-root ]; then
 	rm -fR deb-root
@@ -18,6 +18,6 @@ cp keepass-dav.desktop deb-root/usr/share/applications/
 mkdir -p deb-root/etc/
 cp keepass-dav.etc deb-root/etc/keepass-dav
 
-fpm -C deb-root/ -s dir --name keepass-dav --architecture native -t deb \
+fpm -C deb-root/ -s dir --name keepass-dav --architecture all -t deb \
 	--version "$VERSION" --depends zenity --depends keepassx --depends curl \
 	.
