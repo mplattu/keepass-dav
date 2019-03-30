@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ZENITY_TITLE="KeePass"
+CURL_SETTINGS=--connect-timeout 5 --retry 3
 
 function delete_if_exists {
 	FILE_TO_DELETE=$1
@@ -54,7 +55,7 @@ if [ -f "$KEEPASS_PATH/$KEEPASS_FILE" ]; then
 fi
 
 # Retrieve password database file from the server
-CURL_OUTPUT=`curl -o "$KEEPASS_PATH/$KEEPASS_FILE" --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL" -sw '%{http_code}'`
+CURL_OUTPUT=`curl $CURL_SETTINGS -o "$KEEPASS_PATH/$KEEPASS_FILE" --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL" -sw '%{http_code}'`
 
 if [ "$CURL_OUTPUT" != "200" ]; then
 	error_message "Could not get password file from $KEEPASS_SERVER: $CURL_OUTPUT"
@@ -63,13 +64,13 @@ if [ "$CURL_OUTPUT" != "200" ]; then
 fi
 
 # Rename old file in the server
-curl -X DELETE --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL.retrieved"
-curl -X MOVE --netrc-file "$KEEPASS_PATH/curl_secret" --header "Destination:$KEEPASS_URL.retrieved" "$KEEPASS_URL"
+curl -X DELETE $CURL_SETTINGS --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL.retrieved"
+curl -X MOVE $CURL_SETTINGS --netrc-file "$KEEPASS_PATH/curl_secret" --header "Destination:$KEEPASS_URL.retrieved" "$KEEPASS_URL"
 
 keepassx "$KEEPASS_PATH/$KEEPASS_FILE"
 
 # Send password database file
-CURL_OUTPUT=`curl --netrc-file "$KEEPASS_PATH/curl_secret" -T "$KEEPASS_PATH/$KEEPASS_FILE" "$KEEPASS_URL" -sw '%{http_code}'`
+CURL_OUTPUT=`curl $CURL_SETTINGS --netrc-file "$KEEPASS_PATH/curl_secret" -T "$KEEPASS_PATH/$KEEPASS_FILE" "$KEEPASS_URL" -sw '%{http_code}'`
 
 if [ "$CURL_OUTPUT" != "204" ] && [ "$CURL_OUTPUT" != "201" ]; then
 	error_message "Could not upload password file to $KEEPASS_SERVER: $CURL_OUTPUT"
