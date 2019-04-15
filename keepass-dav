@@ -6,7 +6,7 @@ CURL_SETTINGS=--connect-timeout 5 --retry 3
 function delete_if_exists {
 	FILE_TO_DELETE=$1
 
-	if [ -f "$FILE_TO_DELETE" ]; then 
+	if [ -f "$FILE_TO_DELETE" ]; then
 		rm "$FILE_TO_DELETE"
 	fi
 }
@@ -19,7 +19,7 @@ function create_curl_secret {
 }
 
 function cleanup {
-	delete_if_exists "$KEEPASS_PATH/curl_secret" 
+	delete_if_exists "$KEEPASS_PATH/curl_secret"
 }
 
 function error_message {
@@ -43,6 +43,11 @@ fi
 if [ ! -d "$KEEPASS_PATH" ]; then
 	echo "Creating $KEEPASS_PATH"
 	mkdir -p "$KEEPASS_PATH"
+fi
+
+if [ -f "$KEEPASS_PATH/curl_secret" ]; then
+	error_message "Authentication file $KEEPASS_PATH/curl_secret exists. You probably have another KeePass-DAV running."
+	exit 1
 fi
 
 # Create authentication file
@@ -80,4 +85,3 @@ fi
 
 cleanup
 info_message "Password file was uploaded successfully to $KEEPASS_SERVER. All is good!"
-
