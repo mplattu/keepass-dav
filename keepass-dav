@@ -32,6 +32,11 @@ function info_message {
 	zenity --info --text="$MESSAGE" --title="$ZENITY_TITLE" --width=300
 }
 
+function notification_message {
+	MESSAGE=$1
+	zenity --notification --text="$MESSAGE"
+}
+
 if [ -f /etc/keepass-dav ]; then
 	source /etc/keepass-dav
 fi
@@ -84,4 +89,4 @@ if [ "$CURL_OUTPUT" != "204" ] && [ "$CURL_OUTPUT" != "201" ]; then
 fi
 
 cleanup
-info_message "Password file was uploaded successfully to $KEEPASS_SERVER. All is good!"
+notification_message "Password file was uploaded successfully to $KEEPASS_SERVER. All is good!"
