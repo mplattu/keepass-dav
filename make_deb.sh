@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=1.1.0
+VERSION=1.1.1
 
 if [ -d deb-root ]; then
 	rm -fR deb-root
