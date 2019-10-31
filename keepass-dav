@@ -37,6 +37,18 @@ function notification_message {
 	zenity --notification --text="$MESSAGE"
 }
 
+function show_checkout_workstation {
+	TMPLOCKFILE=`tempfile`
+	CURL_OUTPUT=`curl $CURL_SETTINGS -o "$TMPLOCKFILE" --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL.lock" -sw '%{http_code}'`
+
+	if [ "$CURL_OUTPUT" == "200" ]; then
+		LOCKWSNAME=`cat $TMPLOCKFILE`
+		info_message "Password file has been retrieved to $LOCKWSNAME"
+	else
+		info_message "Could not get lock file from $KEEPASS_SERVER: $CURL_OUTPUT"
+	fi
+}
+
 if [ -f /etc/keepass-dav ]; then
 	source /etc/keepass-dav
 fi
@@ -67,6 +79,12 @@ fi
 # Retrieve password database file from the server
 CURL_OUTPUT=`curl $CURL_SETTINGS -o "$KEEPASS_PATH/$KEEPASS_FILE" --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL" -sw '%{http_code}'`
 
+if [ "$CURL_OUTPUT" == "404" ]; then
+	show_checkout_workstation
+	cleanup
+	exit 1
+fi
+
 if [ "$CURL_OUTPUT" != "200" ]; then
 	error_message "Could not get password file from $KEEPASS_SERVER: $CURL_OUTPUT"
 	cleanup
@@ -76,6 +94,15 @@ fi
 # Rename old file in the server
 curl -X DELETE $CURL_SETTINGS --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL.retrieved"
 curl -X MOVE $CURL_SETTINGS --netrc-file "$KEEPASS_PATH/curl_secret" --header "Destination:$KEEPASS_URL.retrieved" "$KEEPASS_URL"
+
+# Set lock file
+TMPLOCKFILE=`tempfile`
+hostname >$TMPLOCKFILE
+CURL_OUTPUT=`curl $CURL_SETTINGS --netrc-file "$KEEPASS_PATH/curl_secret" -T "$TMPLOCKFILE" "$KEEPASS_URL.lock" -sw '%{http_code}'`
+rm -f $TMPLOCKFILE
+if [ "$CURL_OUTPUT" != "204" ] && [ "$CURL_OUTPUT" != "201" ]; then
+	info_message "Could not upload lock file to $KEEPASS_SERVER: $CURL_OUTPUT"
+fi
 
 keepassx "$KEEPASS_PATH/$KEEPASS_FILE"
 
@@ -87,6 +114,9 @@ if [ "$CURL_OUTPUT" != "204" ] && [ "$CURL_OUTPUT" != "201" ]; then
 	cleanup
 	exit 1
 fi
+
+# Remove lock file
+curl -X DELETE $CURL_SETTINGS --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL.lock"
 
 cleanup
 notification_message "Password file was uploaded successfully to $KEEPASS_SERVER. All is good!"
