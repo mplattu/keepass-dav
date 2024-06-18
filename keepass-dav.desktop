@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=KeePass DAV
 Exec=keepass-dav
-Icon=keepassx
+Icon=keepassxc
 Terminal=False
 Type=Application
 Categories=Qt;Internet;Utility;

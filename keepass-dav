@@ -2,6 +2,7 @@
 
 ZENITY_TITLE="KeePass"
 CURL_SETTINGS="--connect-timeout 5 --retry 3"
+KEEPASS_APP=keepassxc
 
 function delete_if_exists {
 	FILE_TO_DELETE=$1
@@ -104,7 +105,7 @@ if [ "$CURL_OUTPUT" != "204" ] && [ "$CURL_OUTPUT" != "201" ]; then
 	info_message "Could not upload lock file to $KEEPASS_SERVER: $CURL_OUTPUT"
 fi
 
-keepassx "$KEEPASS_PATH/$KEEPASS_FILE"
+$KEEPASS_APP "$KEEPASS_PATH/$KEEPASS_FILE"
 
 # Send password database file
 CURL_OUTPUT=`curl $CURL_SETTINGS --netrc-file "$KEEPASS_PATH/curl_secret" -T "$KEEPASS_PATH/$KEEPASS_FILE" "$KEEPASS_URL" -sw '%{http_code}'`
