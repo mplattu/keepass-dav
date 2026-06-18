@@ -78,6 +78,8 @@ if [ -f "$KEEPASS_PATH/$KEEPASS_FILE" ]; then
 fi
 
 # Retrieve password database file from the server
+touch "$KEEPASS_PATH/$KEEPASS_FILE"
+chmod 0600 "$KEEPASS_PATH/$KEEPASS_FILE"
 CURL_OUTPUT=`curl $CURL_SETTINGS -o "$KEEPASS_PATH/$KEEPASS_FILE" --netrc-file "$KEEPASS_PATH/curl_secret" "$KEEPASS_URL" -sw '%{http_code}'`
 
 if [ "$CURL_OUTPUT" == "404" ]; then
